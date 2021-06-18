@@ -16,7 +16,7 @@ class WolframQuery:
 
     def get_url(self):
         """ Get the wolfram url of the given query. """
-        raise get_query_url(self.get_query())
+        return get_query_url(self.get_query())
 
     def get_query(self):
         """

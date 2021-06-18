@@ -1,3 +1,6 @@
+import re
+from typing import List
+import inspect
 import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,12 +17,19 @@ class WolframSolverException(Exception):
     pass
 
 
+class UserStopException(Exception):
+    """ an exception raise if the user doesn't want to continue """
+    pass
+
+
 class SolverTemplate:
 
     title = "No solver title"
 
-    def __init__(self, solver_input: dict):
+    def __init__(self, solver_input: dict, cli=False):
         self.solver_input = solver_input
+        self.cli = cli
+        self.step_descriptions = []
 
     def validate_input(self):
         pass
@@ -28,23 +38,63 @@ class SolverTemplate:
         pass
 
     def solver_setup(self):
+        if not hasattr(self, 'input_names'):
+            raise NotImplementedError("`input_names` must be implemented.")
+        else:
+            for input_name in self.input_names:
+                try:
+                    setattr(self, input_name, self.solver_input[input_name])
+                except:
+                    raise KeyError(
+                        f"not all input were provided, the inputs for this solver are {self.input_names}"
+                    )
+
         self.validate_input()
         self.parse_input()
 
-    def get_header(self) -> str:
+    def start_solver(self):
+
+        def filter_func(member):
+            if (inspect.ismethod(member)):
+                if hasattr(member, '__name__'):
+                    match = re.match(r"step(\d+)", member.__name__) 
+                    return bool(match)
+                else:
+                    return False
+            else:
+                return False
+        
+        step_methods = inspect.getmembers(self, filter_func)
+        step_methods.sort(key=lambda t: int(t[0][4:]))
+
+        for step in step_methods:
+            
+            name = step[0]
+            function_to_execute = step[1]
+            self.step_descriptions.append(name)
+            function_to_execute()
+
+            if self.cli:
+                continue_process = input("CONTINUE PROCESS [y/n]:  ")
+                if continue_process == 'n':
+                    raise UserStopException("stop program by the user")
+
+
+    def get_header(self) -> List[str]:
         raise NotImplementedError("`get_header()` must be implemented.")
 
-    def get_solver_header(self) -> dict:
-        return {
-            "title": self.title,
-            "header": self.get_header(),
-        }
-
-    def get_summary(self) -> str:
+    def get_summary(self) -> List[str]:
         raise NotImplementedError("`get_summary()` must be implemented.")
 
-    def get_solver_summary(self) -> str:
-        return self.get_summary()
+    def get_solver_result(self):
+        solver_result = {
+            'title': self.title,
+            'header': self.get_header(),
+            'step_descriptions': self.step_descriptions,
+            'summary': self.get_summary(),
+        }
+        return solver_result
+        
 
 
 class WolframSolver(SolverTemplate):
@@ -67,10 +117,10 @@ class WolframSolver(SolverTemplate):
     # The default timeout for the results section
     default_section_timeout = 15
 
-    def __init__(self, solver_input: dict):
-        if not hasattr(self, self.section_timeout):
+    def __init__(self, solver_input: dict, cli):
+        if not hasattr(self, 'section_timeout'):
             self.section_timeout = self.default_section_timeout
-        super().__init__(solver_input)
+        super().__init__(solver_input, cli=cli)
 
     def set_selenium_driver(self, driver):
         self.driver = driver
