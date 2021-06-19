@@ -70,7 +70,7 @@ if __name__ == '__main__':
         "param_function": "{-t, t}", 
         "fxy": "{2xy, x^2 - y}", 
         "integral_range":"0,3"
-    }, cli=True)
+    })
     s.set_selenium_driver(driver)
     s.solver_setup()
     s.start_solver()

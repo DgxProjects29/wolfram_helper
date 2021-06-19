@@ -36,8 +36,10 @@ class SolverTemplate:
 
     def parse_input(self):
         pass
-
+    
     def solver_setup(self):
+        """ initialize the input names for this solver, then execute, validate_input and parse_input respectively """
+        
         if not hasattr(self, 'input_names'):
             raise NotImplementedError("`input_names` must be implemented.")
         else:
@@ -117,7 +119,7 @@ class WolframSolver(SolverTemplate):
     # The default timeout for the results section
     default_section_timeout = 15
 
-    def __init__(self, solver_input: dict, cli):
+    def __init__(self, solver_input: dict, cli = False):
         if not hasattr(self, 'section_timeout'):
             self.section_timeout = self.default_section_timeout
         super().__init__(solver_input, cli=cli)
@@ -125,18 +127,18 @@ class WolframSolver(SolverTemplate):
     def set_selenium_driver(self, driver):
         self.driver = driver
 
-    def get_result(self, query ,pos, sleep_time=5):
+    def get_result(self, query, pos, sleep_time=5):
         """ 
         Get a result from the wolfram app 
 
         query: a wolfram query object
-        pos: wolfram give us a list of the results, pos indicate what result use.
-        sleep_time: after retrieving the results section, how much time wait to get the result indicated
+        pos: wolfram give us a list of the results, pos indicate what result to use.
+        sleep_time: after retrieving the results section, how long to wait for the indicated result
         """
         self.driver.get(query.get_url())
         time.sleep(sleep_time)
-        self.driver.execute_script(self.MOUSE_OVER_SCRIPT.format(pos=pos))
         try:
+            self.driver.execute_script(self.MOUSE_OVER_SCRIPT.format(pos=pos))
             result_section = self.get_results_section()
             a_element = result_section.find_element_by_css_selector(
                 f"{self.RESULT_CONTAINER_SELECTOR} a")
@@ -146,6 +148,8 @@ class WolframSolver(SolverTemplate):
                 self.RESULTS_IMAGE_SELECTOR)
             res = imgs[pos].get_attribute("alt").replace(" ", "")
             res = res[res.find("=") + 1:]
+        except Exception as e:
+            raise WolframSolverException(str(e))
         return res
 
     def get_results_section(self):
