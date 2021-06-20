@@ -22,7 +22,7 @@ The structure of a solver is the following
 
 ```python
 # located in examples/simple_solver.py
-class SimpleSolver(SolverTemplate):
+class SimpleTestSolver(SolverTemplate):
 
     title = "simple solver"
 
