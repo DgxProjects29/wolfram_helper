@@ -94,7 +94,7 @@ a solver receive an input, do some calculations through steps and finally output
 |----------------|--------|------------------------------------------------------------------------------------------|
 | get_header     | list   | useful for putting information about the solver                                          |
 | get_summary    | list   | useful for putting the results found                                                     |
-| validate_input | None   | validate solver's input here. if something is wrong, you can rise an InvalidInputException |
+| validate_input | None   | validate solver's input here. if something is wrong, you can raise an InvalidInputException |
 | parse_input    | None   | some inputs may be strings, you can parse them in this method  
 
 solver's process is defined in steps methods that follows the pattern step+number
